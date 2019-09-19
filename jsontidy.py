@@ -22,14 +22,14 @@ EMPTY = True
 LIST_SINGLES = True
 LIST_OF_NUMBERS = True
 LIST_OF_BOOLS = True
-LIST_OF_LISTS_OF = False
+LIST_OF_STRINGS = True
 DICT_OF_NUMBERS = True
 DICT_OF_BOOLS = True
 DICT_MAX_ELEMENTS = 5  # allows RGBA or XYZW or RGBLr style dicts
 FLOAT_FORMAT = "{:g}"  # limits precision to ~6dp
 
 
-def dump(data, stream, indent):
+def dump(data, stream, indent, sort_keys):
     def tab(d):
         return " " * (indent * d)
 
@@ -37,7 +37,7 @@ def dump(data, stream, indent):
         if (
             (LIST_OF_NUMBERS and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in o))
             or (LIST_OF_BOOLS and all(isinstance(x, bool) for x in o))
-            or (LIST_OF_LISTS_OF and all(isinstance(x, list) and can_compact_list(x) for x in o))
+            or (LIST_OF_STRINGS and all(isinstance(x, str) for x in o))
             or (LIST_SINGLES and len(o) == 1)
             or (EMPTY and len(o) == 0)
         ):
@@ -70,9 +70,10 @@ def dump(data, stream, indent):
         elif isinstance(o, dict):
             (start, key, comma, end) = config_dict(o.values(), depth)
             yield start
-            for n, (k, v) in enumerate(o.items()):
+            keys = sorted(o.keys()) if sort_keys else o.keys()
+            for n, k in enumerate(keys):
                 yield key.format(k)
-                yield from encode(v, False, depth + 1)
+                yield from encode(o[k], False, depth + 1)
                 if n < len(o) - 1:
                     yield comma
             yield end
@@ -98,10 +99,11 @@ def dump(data, stream, indent):
 parser = ArgumentParser(description="Tidy JSON files in-place.")
 parser.add_argument("files", metavar="FILE", type=str, nargs="+", help="file to tidy")
 parser.add_argument("-i", "--indent", type=int, default=4, help="number of spaces per depth")
+parser.add_argument("-s", "--sort", action="store_true", help="sort keys")
 args = parser.parse_args()
 
 for filename in args.files:
     with open(filename) as f:
         data = json_load(f)
     with open(filename, "w") as f:
-        dump(data, f, args.indent)
+        dump(data, f, args.indent, args.sort)
