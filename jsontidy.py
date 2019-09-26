@@ -29,7 +29,7 @@ DICT_MAX_ELEMENTS = 5  # allows RGBA or XYZW or RGBLr style dicts
 FLOAT_FORMAT = "{:g}"  # limits precision to ~6dp
 
 
-def dump(data, stream, indent, sort_keys):
+def dump(data, stream, indent=4, sort_keys=False, sort_strings=False):
     def tab(d):
         return " " * (indent * d)
 
@@ -62,7 +62,8 @@ def dump(data, stream, indent, sort_keys):
         if isinstance(o, (list, tuple)):
             (start, comma, end, next_indent, next_depth) = config_list(o, depth)
             yield start
-            for n, v in enumerate(o):
+            values = sorted(o) if (sort_strings and all(isinstance(x, str) for x in o)) else o
+            for n, v in enumerate(values):
                 yield from encode(v, next_indent, next_depth)
                 if n < len(o) - 1:
                     yield comma
@@ -99,11 +100,13 @@ def dump(data, stream, indent, sort_keys):
 parser = ArgumentParser(description="Tidy JSON files in-place.")
 parser.add_argument("files", metavar="FILE", type=str, nargs="+", help="file to tidy")
 parser.add_argument("-i", "--indent", type=int, default=4, help="number of spaces per depth")
-parser.add_argument("-s", "--sort", action="store_true", help="sort keys")
+parser.add_argument("-s", "--sort", action="store_true", help="sort keys and strings")
+parser.add_argument("--sort-keys", action="store_true", help="sort keys")
+parser.add_argument("--sort-strings", action="store_true", help="sort strings")
 args = parser.parse_args()
 
 for filename in args.files:
     with open(filename) as f:
         data = json_load(f)
     with open(filename, "w") as f:
-        dump(data, f, args.indent, args.sort)
+        dump(data, f, args.indent, args.sort or args.sort_keys, args.sort or args.sort_strings)
