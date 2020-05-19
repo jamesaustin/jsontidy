@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 from json import load as json_load
 from argparse import ArgumentParser
 from re import compile as re_compile
@@ -22,7 +22,7 @@ EMPTY = True
 LIST_SINGLES = True
 LIST_OF_NUMBERS = True
 LIST_OF_BOOLS = True
-LIST_OF_STRINGS = True
+LIST_OF_STRINGS = False
 DICT_OF_NUMBERS = True
 DICT_OF_BOOLS = True
 DICT_MAX_ELEMENTS = 5  # allows RGBA or XYZW or RGBLr style dicts
@@ -106,7 +106,7 @@ parser.add_argument("--sort-strings", action="store_true", help="sort strings")
 args = parser.parse_args()
 
 for filename in args.files:
-    with open(filename) as f:
+    with open(filename, "r") as f:
         data = json_load(f)
     with open(filename, "w") as f:
         dump(data, f, args.indent, args.sort or args.sort_keys, args.sort or args.sort_strings)
